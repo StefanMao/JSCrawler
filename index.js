@@ -1,23 +1,26 @@
-// const TARGET_URL = "https://shopee.tw/api/v4/search/search_items?by=relevancy&keyword=nintendo%20switch&limit=60&newest=0&order=desc&page_type=search&scenario=PAGE_GLOBAL_SEARCH&version=2"
-//https://shopee.tw/api/v4/search/search_items?by=relevancy&keyword=nintendo%20switch&limit=60&newest=60&order=desc&page_type=search&scenario=PAGE_GLOBAL_SEARCH&version=2
+
+let maxPage = 0;
+let page = 0;
+
+const locationUrl = location.href;
+const searchParam = analyzeUrl(locationUrl);
+
+const loop = async () => {
+
+  let dataArray = [];
+  do {
+    let result = await webCrawler();
+    dataArray.push(...result)
+    page += 1;
+    console.log(`${page}/${maxPage} 正在撈取第${page}頁的數據...`)
+  } while (page <= maxPage);
+  return dataArray;
+};
+
+console.log(await loop())
 
 function reqError() {
   console.log("error");
-}
-
-function onReadyStateChange() {
-  console.log("stateChange");
-  console.log(this.readyState);
-  console.log(this.status);
-
-  if (this.readyState === 4 && this.status == 200) {
-    let { adjust, items } = JSON.parse(this.responseText);
-    maxPage = getPageLimit(adjust.count);
-    dataArray.push(...formatData(items));
-    page = page + 1;
-    console.log('page stateChange')
-    console.log(page);
-  }
 }
 
 function formatData(items) {
@@ -33,19 +36,23 @@ function formatData(items) {
   return result;
 }
 
-function webCrawler(searchParam) {
-  let xhr = new XMLHttpRequest();
-  xhr.onerror = reqError;
-  xhr.onreadystatechange = onReadyStateChange;
-
-  do {
-    console.log(page);
-    console.log(maxPage);
+function webCrawler() {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
     const url = transToApiUrl(searchParam, page);
     xhr.open("get", url, true);
+    xhr.onload = function () {
+      if (this.status == 200) {
+        let { adjust, items } = JSON.parse(this.responseText);
+        maxPage = getPageLimit(adjust.count);
+        // dataArray.push(...formatData(items));
+        resolve([...formatData(items)]);
+      } else {
+        reject(`Page${page}發生錯誤`);
+      }
+    };
     xhr.send(null);
-    console.log(page);
-  } while (page <= 5);
+  });
 }
 
 function analyzeUrl(url) {
@@ -66,21 +73,3 @@ function transToApiUrl(searchParam, page) {
   let newest = page * 60;
   return `https://shopee.tw/api/v4/search/search_items?by=relevancy&${searchParam}&limit=60&newest=${newest}&order=desc&page_type=search&scenario=PAGE_GLOBAL_SEARCH&version=2`;
 }
-
-/** 目標網址 */
-// const TARGET_URL = "https://shopee.tw/search?keyword=nintendo%20switch";
-// const TARGET_URL =
-// "https://shopee.tw/api/v4/search/search_items?by=relevancy&keyword=nintendo%20switch&limit=60&newest=0&order=desc&page_type=search&scenario=PAGE_GLOBAL_SEARCH&version=2";
-
-let dataArray = [];
-let page = 0;
-let maxPage = 0;
-
-(function () {
-  const locationUrl = location.href;
-  const searchParam = analyzeUrl(locationUrl);
-
-  if (searchParam) {
-    webCrawler(searchParam);
-  }
-})();
