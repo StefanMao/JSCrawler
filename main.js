@@ -29,7 +29,6 @@ class WebCrawler extends XMLHttpRequest {
       this.onload = function () {
         if (this.status == 200) {
           let { total_count, items } = JSON.parse(this.responseText);
-          //   let dataTotal = total_count - total_ads_count;
           this.pageLimit = this.getPageLimit(total_count);
           resolve([...this.formatData(items)]);
         } else {
