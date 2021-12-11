@@ -14,8 +14,8 @@ class WebCrawler extends XMLHttpRequest {
 
   async doCrawler() {
     do {
-      this.showCrawlingMsg();
       let result = await this.webCrawler();
+      this.showCrawlingMsg();
       this.dataArray.push(...result);
       this.page += 1;
     } while (this.page <= this.pageLimit);
@@ -24,16 +24,13 @@ class WebCrawler extends XMLHttpRequest {
 
   webCrawler() {
     return new Promise((resolve, reject) => {
-      //   const xhr = new XMLHttpRequest();
       const url = this.transToApiUrl();
       this.open("get", url, true);
       this.onload = function () {
         if (this.status == 200) {
-          let { total_count, total_ads_count, items } = JSON.parse(
-            this.responseText
-          );
-          let dataTotal = total_count - total_ads_count;
-          this.pageLimit = this.getPageLimit(dataTotal);
+          let { total_count, items } = JSON.parse(this.responseText);
+          //   let dataTotal = total_count - total_ads_count;
+          this.pageLimit = this.getPageLimit(total_count);
           resolve([...this.formatData(items)]);
         } else {
           reject(`Page${this.page}發生錯誤`);
@@ -49,7 +46,7 @@ class WebCrawler extends XMLHttpRequest {
       return {
         title: name,
         imgUrl: `https://cf.shopee.tw/file/${image}_tn`,
-        price: price / 100000,
+        price: `$${price / 100000}`,
         link: `https://shopee.tw/${name}-i.${shopid}.${itemid}`,
       };
     });
@@ -79,7 +76,7 @@ class WebCrawler extends XMLHttpRequest {
 
   showCrawlingMsg() {
     console.log(
-      `正在撈取第${this.page}頁的數據...`
+      `目前進度:${this.page}/${this.pageLimit}，正在撈取第${this.page}頁的數據...`
     );
   }
 
@@ -88,12 +85,12 @@ class WebCrawler extends XMLHttpRequest {
     const productElement = document.querySelectorAll('[data-sqe="item"]')[0];
     if (productElement != null) {
       const element = productElement.querySelectorAll('[data-sqe="link"]')[0];
-  
+
       const link = element.getAttribute("href");
       const imgUrl = element
         .getElementsByClassName("_3-N5L6 _2GchKS")[0]
         .getAttribute("src");
-  
+
       const title = element.getElementsByClassName("_10Wbs- _5SSWfi UjjMrh")[0]
         .innerText;
       const price = element.getElementsByClassName("_1d9_77")[0].innerText;
@@ -101,7 +98,7 @@ class WebCrawler extends XMLHttpRequest {
         title: title,
         img: imgUrl,
         link: `https://shopee.tw${link}`,
-        price: price,
+        price: `$${price}`,
       };
     } else {
       return `無數據撈取`;
@@ -109,13 +106,10 @@ class WebCrawler extends XMLHttpRequest {
   }
 }
 
-
 let nintendoSwitch = new WebCrawler({ url: location.href });
 
+console.log("頁面爬抓一筆資料結果:");
+console.log(nintendoSwitch.doPageCrawler());
 
-console.log('頁面爬抓一筆資料結果:')
-console.log(nintendoSwitch.doPageCrawler())
-
-console.log('Api爬抓結果:')
+console.log("Api爬抓結果:");
 console.log(await nintendoSwitch.doCrawler());
-
